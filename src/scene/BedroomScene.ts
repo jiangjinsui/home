@@ -86,10 +86,11 @@ export class BedroomScene {
     make(this.rain,220,0xa7bdd0); make(this.snow,120,0xf2f0e8); make(this.leaves,55,0xb07845);
   }
   updateWeather(weather:Weather){
-    this.rain.visible=weather==="rain"; this.snow.visible=weather==="snow"; this.leaves.visible=weather==="autumn";
+    this.rain.visible=weather==="rain"; this.snow.visible=weather==="snow";
   }
   updateSeason(season:Season){
     this.outsideGroup.userData.season=season;
+    this.leaves.visible=season==="autumn";
     this.root.traverse(o=>{ if(o instanceof THREE.Mesh && o.userData.curtain) o.material.opacity=season==="winter"?.82:1; });
   }
   tick(t:number){

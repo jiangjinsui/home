@@ -1,25 +1,20 @@
 # Quiet Room — Procedural 3D Bedroom
 
-Three.js + React + TypeScript procedural 3D bedroom.
+Vite + React + TypeScript + Three.js procedural 3D bedroom. No external 3D models are required.
 
 ## GitHub Pages
 
-1. Push the contents of this project to a GitHub repository.
-2. Open **Settings → Pages**.
-3. Set **Source** to **GitHub Actions**.
-4. Push to the `main` branch. The included workflow builds `dist` and deploys it automatically.
+1. Push the whole project to the `main` branch.
+2. Open **Settings → Pages** and set **Source** to **GitHub Actions**.
+3. The workflow in `.github/workflows/deploy.yml` builds `dist` and deploys it automatically.
+4. Do not use `Deploy from a branch` with the source project files.
 
-The Vite build uses a relative base path, so it works at `https://USER.github.io/REPO/` as well as at a domain root.
+The workflow intentionally fails when `npm run build` fails, so a broken build cannot be published as a blank site.
 
 ## Local
 
 ```bash
 npm install
-npm run dev
-```
-
-Build:
-
-```bash
 npm run build
+npm run dev
 ```
