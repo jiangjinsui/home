@@ -7,14 +7,14 @@ import { Season, Weather, Language, RenderMode } from "./types";
 
 const text = {
   zh: {
-    time: "时间", season: "季节", weather: "天气", light: "灯光",
+    time: "时间", season: "季节", weather: "天气", light: "灯光", cozy: "温馨",
     mode: "画风", screenshot: "截图", fullscreen: "全屏", reset: "重置视角",
     pause: "暂停", play: "自动", spring: "春", summer: "夏", autumn: "秋",
     winter: "冬", clear: "晴", cloudy: "阴", rain: "雨", snow: "雪",
     native: "原生 3D", pixel: "2px 像素", webglError: "3D 场景启动失败"
   },
   en: {
-    time: "TIME", season: "SEASON", weather: "WEATHER", light: "LIGHT",
+    time: "TIME", season: "SEASON", weather: "WEATHER", light: "LIGHT", cozy: "COZY",
     mode: "STYLE", screenshot: "SHOT", fullscreen: "FULL", reset: "RESET",
     pause: "PAUSE", play: "AUTO", spring: "SPRING", summer: "SUMMER",
     autumn: "AUTUMN", winter: "WINTER", clear: "CLEAR", cloudy: "CLOUDY",
@@ -42,9 +42,10 @@ export default function App() {
   const [lang, setLang] = useState<Language>("zh");
   const [mode, setMode] = useState<RenderMode>("native");
   const [lights, setLights] = useState(true);
+  const [cozy, setCozy] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const stateRef = useRef({ time: 18.5, auto: true, season: "spring" as Season, weather: "clear" as Weather, mode: "native" as RenderMode, lights: true });
+  const stateRef = useRef({ time: 18.5, auto: true, season: "spring" as Season, weather: "clear" as Weather, mode: "native" as RenderMode, lights: true, cozy: true });
   const systems = useRef<{ r: SceneRenderer; s: THREE.Scene; c: THREE.PerspectiveCamera; b: BedroomScene; t: TimeSystem } | null>(null);
 
   const updateState = (patch: Partial<typeof stateRef.current>) => {
@@ -147,6 +148,7 @@ export default function App() {
 
         bedroom.updateWeather(state.weather);
         bedroom.updateSeason(state.season);
+        bedroom.setCozyMode(state.cozy);
         bedroom.tick(now / 1000);
 
         const day = env.daylight;
@@ -164,6 +166,7 @@ export default function App() {
           timeSystem.main.intensity = 0;
           timeSystem.bedside.intensity = 0;
           timeSystem.desk.intensity = 0;
+          timeSystem.cozy.intensity = 0;
         }
 
         renderer.setPixelMode(state.mode === "pixel");
@@ -293,6 +296,12 @@ export default function App() {
             updateState({ lights: value });
             setLights(value);
           }}>◐ {L.light}</button>
+
+          <button className={cozy ? "active" : ""} onClick={() => {
+            const value = !stateRef.current.cozy;
+            updateState({ cozy: value });
+            setCozy(value);
+          }}>☼ {L.cozy}</button>
 
           <button onClick={() => {
             const value = stateRef.current.mode === "native" ? "pixel" : "native";

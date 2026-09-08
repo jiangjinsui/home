@@ -7,10 +7,11 @@ export class TimeSystem {
   main=new THREE.PointLight(0xffc88d,0,12,2);
   bedside=new THREE.PointLight(0xffb878,0,6,2);
   desk=new THREE.PointLight(0xffd09a,0,7,2);
+  cozy=new THREE.PointLight(0xffb56f,0.8,5,2);
   constructor(scene:THREE.Scene){
     this.sun.castShadow=true; this.sun.shadow.mapSize.set(768,768); scene.add(this.sun,this.moon,this.ambient);
-    this.main.position.set(0,3.8,0); this.bedside.position.set(1.35,1.8,-1.7); this.desk.position.set(-.2,2.2,2.8);
-    scene.add(this.main,this.bedside,this.desk);
+    this.main.position.set(0,3.8,0); this.bedside.position.set(1.35,1.8,-1.7); this.desk.position.set(-.2,2.2,2.8); this.cozy.position.set(-2.6,2.5,-3.6);
+    scene.add(this.main,this.bedside,this.desk,this.cozy);
   }
   update(dt:number){
     if(this.auto) this.time=(this.time+dt*this.speed)%24;
@@ -24,7 +25,7 @@ export class TimeSystem {
     this.moon.intensity=Math.max(0,.35-daylight*.3);
     this.ambient.intensity=.35+daylight*.55;
     const lamp=(1-daylight)*2.2+Math.max(dawn,dusk)*.45;
-    this.main.intensity=lamp; this.bedside.intensity=lamp*.72; this.desk.intensity=lamp*.55;
+    this.main.intensity=lamp; this.bedside.intensity=lamp*.72; this.desk.intensity=lamp*.55; this.cozy.intensity=Math.max(0, lamp*.32);
     return {daylight,dawn,dusk};
   }
 }

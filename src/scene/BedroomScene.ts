@@ -86,9 +86,12 @@ function addLamp(group: THREE.Group, x: number, z: number) {
 
 function addCat(group: THREE.Group) {
   const cat = new THREE.Group();
+  // Start on the bed. The animation system will later let the cat hop down and wander.
   cat.position.set(-0.8, 1.55, -0.95);
   cat.rotation.y = 0.25;
   cat.userData.isCat = true;
+  cat.userData.catHome = new THREE.Vector3(-0.8, 1.55, -0.95);
+  cat.userData.catFloorHome = new THREE.Vector3(-2.75, 0.2, 0.35);
 
   addSphere(cat, [0.43, 0.28, 0.28], [0, 0.15, 0], 0xc6a58f);
   addSphere(cat, [0.28, 0.27, 0.25], [0, 0.48, -0.03], 0xd0b09a);
@@ -96,6 +99,7 @@ function addCat(group: THREE.Group) {
   const earL = new THREE.Mesh(new THREE.ConeGeometry(0.105, 0.22, 4), material(0xb68e7d));
   earL.position.set(-0.17, 0.68, -0.03);
   earL.rotation.z = -0.25;
+  earL.userData.catEar = true;
   cat.add(earL);
   const earR = earL.clone();
   earR.position.x = 0.17;
@@ -106,6 +110,7 @@ function addCat(group: THREE.Group) {
   for (const x of [-0.095, 0.095]) {
     const eye = new THREE.Mesh(new THREE.SphereGeometry(0.028, 8, 6), eyeMat);
     eye.position.set(x, 0.5, -0.235);
+    eye.userData.catEye = true;
     cat.add(eye);
   }
 
@@ -113,7 +118,23 @@ function addCat(group: THREE.Group) {
   nose.position.set(0, 0.44, -0.245);
   cat.add(nose);
 
-  const tail = new THREE.Mesh(new THREE.TorusGeometry(0.28, 0.045, 8, 20, Math.PI * 1.45), material(0xb9947e));
+  // Four tiny legs give the walking cycle something visible to animate.
+  const legPositions: [number, number][] = [[-0.24, -0.15], [0.24, -0.15], [-0.24, 0.15], [0.24, 0.15]];
+  legPositions.forEach(([x, z], i) => {
+    const leg = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.055, 0.065, 0.28, 8),
+      material(0xb9947e)
+    );
+    leg.position.set(x, -0.02, z);
+    leg.userData.catLeg = i;
+    leg.castShadow = true;
+    cat.add(leg);
+  });
+
+  const tail = new THREE.Mesh(
+    new THREE.TorusGeometry(0.28, 0.045, 8, 20, Math.PI * 1.45),
+    material(0xb9947e)
+  );
   tail.position.set(0.36, 0.19, 0.03);
   tail.rotation.set(0.1, 0, -0.75);
   tail.userData.catTail = true;
@@ -133,6 +154,17 @@ export class BedroomScene {
   private curtainMaterial = material(0xe7ddd2, 0.9);
   private seasonalMeshes: THREE.Mesh[] = [];
   private cat?: THREE.Group;
+  private cozyLights = new THREE.Group();
+  private dust = new THREE.Group();
+  private catWaypoints = [
+    new THREE.Vector3(-2.75, 0.2, 0.35),
+    new THREE.Vector3(-1.35, 0.2, 1.55),
+    new THREE.Vector3(0.95, 0.2, 1.75),
+    new THREE.Vector3(2.25, 0.2, 0.45),
+    new THREE.Vector3(1.55, 0.2, -1.55),
+    new THREE.Vector3(-0.1, 0.2, -2.65),
+    new THREE.Vector3(-2.75, 0.2, 0.35),
+  ];
 
   constructor(public scene: THREE.Scene) {
     this.buildRoom();
@@ -140,6 +172,7 @@ export class BedroomScene {
     this.buildWindow();
     this.buildOutside();
     this.buildPlantsAndDecor();
+    this.buildCozyDetails();
     this.buildParticles();
     scene.add(this.root);
   }
@@ -285,6 +318,55 @@ export class BedroomScene {
     addSphere(this.root, [0.55, 0.14, 0.42], [2.15, 0.17, 0.35], 0xa58f84);
   }
 
+  private buildCozyDetails() {
+    // A soft string of warm lights makes the small room feel lived-in rather than like a showroom.
+    const bulbMat = new THREE.MeshStandardMaterial({ color: 0xffd9a8, emissive: 0xffa85c, emissiveIntensity: 1.6, roughness: 0.45 });
+    const wireMat = material(0x4b403b, 0.9);
+    const wire = new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(-4.15, 3.55, -4.0),
+        new THREE.Vector3(-2.0, 3.25, -4.0),
+        new THREE.Vector3(0.2, 3.55, -4.0),
+        new THREE.Vector3(2.3, 3.25, -4.0),
+        new THREE.Vector3(4.0, 3.55, -4.0),
+      ]),
+      wireMat,
+    );
+    this.cozyLights.add(wire);
+    const bulbs = [
+      [-3.7, 3.48], [-2.85, 3.36], [-2.0, 3.25], [-1.1, 3.38], [-0.2, 3.52],
+      [0.7, 3.4], [1.55, 3.3], [2.35, 3.27], [3.2, 3.38], [3.95, 3.52],
+    ];
+    bulbs.forEach(([x, y], i) => {
+      const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.055, 8, 6), bulbMat);
+      bulb.position.set(x, y, -3.96);
+      bulb.userData.cozyBulb = i;
+      this.cozyLights.add(bulb);
+    });
+    this.root.add(this.cozyLights);
+
+    // Tiny warm wall sconces / reflected glow.
+    const glowMat = new THREE.MeshBasicMaterial({ color: 0xffc58a, transparent: true, opacity: 0.34 });
+    for (const x of [-4.72, 4.72]) {
+      const glow = new THREE.Mesh(new THREE.CircleGeometry(0.32, 20), glowMat);
+      glow.position.set(x, 2.55, -3.98);
+      glow.rotation.y = x < 0 ? Math.PI / 2 : -Math.PI / 2;
+      this.cozyLights.add(glow);
+    }
+
+    // Soft dust motes in the window light.
+    const geo = new THREE.BufferGeometry();
+    const positions = new Float32Array(55 * 3);
+    for (let i = 0; i < 55; i++) {
+      positions[i * 3] = -3.1 + Math.random() * 4.2;
+      positions[i * 3 + 1] = 0.7 + Math.random() * 3.1;
+      positions[i * 3 + 2] = -3.7 + Math.random() * 2.3;
+    }
+    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    this.dust.add(new THREE.Points(geo, new THREE.PointsMaterial({ color: 0xffe6c7, size: 0.028, transparent: true, opacity: 0.32 })));
+    this.root.add(this.dust);
+  }
+
   private buildParticles() {
     const make = (group: THREE.Group, count: number, color: number) => {
       const geo = new THREE.BufferGeometry();
@@ -302,6 +384,11 @@ export class BedroomScene {
     make(this.rain, 180, 0xa9c0d0);
     make(this.snow, 100, 0xf2f0e8);
     make(this.leaves, 48, 0xb07845);
+  }
+
+  setCozyMode(on: boolean) {
+    this.cozyLights.visible = on;
+    this.dust.visible = on;
   }
 
   updateWeather(weather: Weather) {
@@ -333,16 +420,110 @@ export class BedroomScene {
     });
   }
 
+  private animateCat(cat: THREE.Group, t: number) {
+    const cycle = t % 42;
+    const home = cat.userData.catHome as THREE.Vector3;
+    const floorHome = cat.userData.catFloorHome as THREE.Vector3;
+    const phase = cycle < 5 ? "bed" : cycle < 6.4 ? "jumpDown" : cycle < 29 ? "walk" : cycle < 34 ? "sit" : cycle < 40 ? "return" : "jumpUp";
+    cat.userData.catPhase = phase;
+
+    const tail = cat.children.find((child) => child.userData.catTail);
+    const legs = cat.children.filter((child) => child.userData.catLeg) as THREE.Object3D[];
+    const head = cat.children[1];
+
+    if (phase === "bed") {
+      const breathe = Math.sin(t * 1.7) * 0.012;
+      cat.position.copy(home);
+      cat.position.y += breathe;
+      cat.rotation.y = 0.25 + Math.sin(t * 0.3) * 0.035;
+      if (tail) tail.rotation.z = -0.75 + Math.sin(t * 0.8) * 0.06;
+      legs.forEach((leg) => { leg.rotation.z = 0; });
+      return;
+    }
+
+    if (phase === "jumpDown") {
+      const p = (cycle - 5) / 1.4;
+      const eased = p * p * (3 - 2 * p);
+      cat.position.lerpVectors(home, floorHome, eased);
+      cat.position.y = THREE.MathUtils.lerp(1.55, 0.2, eased) + Math.sin(p * Math.PI) * 0.48;
+      cat.rotation.y = 0.25;
+      if (tail) tail.rotation.z = -0.75 + Math.sin(t * 2.4) * 0.18;
+      legs.forEach((leg) => { leg.rotation.z = Math.sin(p * Math.PI) * 0.18; });
+      return;
+    }
+
+    if (phase === "jumpUp") {
+      const p = (cycle - 40) / 2;
+      const eased = p * p * (3 - 2 * p);
+      cat.position.lerpVectors(floorHome, home, eased);
+      cat.position.y = THREE.MathUtils.lerp(0.2, 1.55, eased) + Math.sin(p * Math.PI) * 0.42;
+      cat.rotation.y = 0.25;
+      if (tail) tail.rotation.z = -0.75 + Math.sin(t * 2.2) * 0.18;
+      legs.forEach((leg) => { leg.rotation.z = Math.sin(p * Math.PI) * 0.15; });
+      return;
+    }
+
+    if (phase === "sit") {
+      cat.position.copy(this.catWaypoints[Math.min(4, this.catWaypoints.length - 2)]);
+      cat.position.y = 0.2 + Math.sin(t * 1.3) * 0.008;
+      cat.rotation.y += Math.sin(t * 0.5) * 0.004;
+      if (tail) tail.rotation.z = -0.9 + Math.sin(t * 0.9) * 0.12;
+      legs.forEach((leg, i) => { leg.rotation.z = i < 2 ? 0.18 : 0; });
+      if (head) head.rotation.y = Math.sin(t * 0.7) * 0.16;
+      return;
+    }
+
+    const duration = phase === "walk" ? 22.6 : 6;
+    const local = phase === "walk" ? cycle - 6.4 : cycle - 34;
+    const progress = Math.min(0.999, Math.max(0, local / duration));
+    const segmentCount = this.catWaypoints.length - 1;
+    const scaled = progress * segmentCount;
+    const index = Math.min(segmentCount - 1, Math.floor(scaled));
+    const segmentT = scaled - index;
+    const from = this.catWaypoints[index];
+    const to = this.catWaypoints[index + 1];
+    cat.position.lerpVectors(from, to, segmentT);
+    cat.position.y = 0.2 + Math.abs(Math.sin(t * 7.5)) * 0.018;
+
+    const dx = to.x - from.x;
+    const dz = to.z - from.z;
+    const desiredYaw = Math.atan2(dx, -dz);
+    cat.rotation.y = THREE.MathUtils.lerp(cat.rotation.y, desiredYaw, 0.12);
+
+    const stride = Math.sin(t * 10.5);
+    legs.forEach((leg, i) => {
+      const direction = i % 2 === 0 ? 1 : -1;
+      leg.rotation.z = stride * 0.22 * direction;
+    });
+    if (tail) tail.rotation.z = -0.75 + Math.sin(t * 3.4) * 0.28;
+    if (head) head.rotation.y = Math.sin(t * 1.4) * 0.08;
+  }
+
   tick(t: number) {
     for (const o of this.dynamic) {
       if (o.userData.isCat) {
-        o.position.y = 1.55 + Math.sin(t * 0.8) * 0.018;
-        o.rotation.y = 0.25 + Math.sin(t * 0.35) * 0.08;
-        const tail = o.children.find((child) => child.userData.catTail);
-        if (tail) tail.rotation.z = -0.75 + Math.sin(t * 1.4) * 0.25;
+        this.animateCat(o, t);
       } else {
         o.rotation.z = Math.sin(t * 0.8 + o.id) * 0.012;
       }
+    }
+
+    if (this.cozyLights.visible) {
+      this.cozyLights.children.forEach((o, i) => {
+        if (o.userData.cozyBulb !== undefined) {
+          const pulse = 0.9 + Math.sin(t * 1.4 + i * 0.55) * 0.12;
+          (o as THREE.Mesh).scale.setScalar(pulse);
+        }
+      });
+    }
+    const dustPoints = this.dust.children[0] as THREE.Points | undefined;
+    if (dustPoints && this.dust.visible) {
+      const a = dustPoints.geometry.getAttribute('position') as THREE.BufferAttribute;
+      for (let i = 0; i < a.count; i++) {
+        a.setY(i, a.getY(i) + Math.sin(t * 0.35 + i) * 0.0007);
+        a.setX(i, a.getX(i) + Math.cos(t * 0.28 + i * 0.7) * 0.00045);
+      }
+      a.needsUpdate = true;
     }
 
     for (const g of [this.rain, this.snow, this.leaves]) {
