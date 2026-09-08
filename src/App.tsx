@@ -61,7 +61,7 @@ export default function App() {
     try {
       const scene = new THREE.Scene();
       const camera = new THREE.PerspectiveCamera(48, 1, 0.1, 100);
-      camera.position.set(10, 6, 11);
+      camera.position.set(8.8, 5.4, 9.8);
       camera.lookAt(0, 1.5, 0);
 
       const renderer = new SceneRenderer(host);
@@ -207,7 +207,7 @@ export default function App() {
   const reset = () => {
     const c = systems.current?.c;
     if (c) {
-      c.position.set(10, 6, 11);
+      c.position.set(8.8, 5.4, 9.8);
       c.lookAt(0, 1.5, 0);
     }
   };
