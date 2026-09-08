@@ -1,0 +1,24 @@
+{
+  "name": "procedural-3d-bedroom",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "@types/three": "^0.179.0",
+    "three": "^0.179.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.6.0",
+    "eslint": "^9.33.0",
+    "typescript": "^5.9.2",
+    "vite": "^7.1.3"
+  }
+}
